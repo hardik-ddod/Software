@@ -21,6 +21,4 @@ class KickIntent : public DirectPrimitiveIntent
     explicit KickIntent(unsigned int robot_id, const Point& dest,
                         const Angle& final_angle, double final_speed,
                         unsigned int priority);
-
-    KickIntent() = delete;
 };

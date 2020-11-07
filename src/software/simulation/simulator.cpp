@@ -14,10 +14,14 @@ extern "C"
 #include "firmware/app/world/firmware_world.h"
 }
 
-Simulator::Simulator(const Field& field,
-                     std::shared_ptr<const SimulatorConfig> simulator_config,
-                     const Duration& physics_time_step)
-    : physics_world(field, simulator_config),
+Simulator::Simulator(const Field& field, const Duration& physics_time_step)
+    : Simulator(field, 1.0, 0.0, physics_time_step)
+{
+}
+
+Simulator::Simulator(const Field& field, double ball_restitution,
+                     double ball_linear_damping, const Duration& physics_time_step)
+    : physics_world(field, ball_restitution, ball_linear_damping),
       yellow_team_defending_side(FieldSide::NEG_X),
       blue_team_defending_side(FieldSide::NEG_X),
       frame_number(0),
@@ -29,16 +33,6 @@ void Simulator::setBallState(const BallState& ball_state)
 {
     physics_world.setBallState(ball_state);
     simulator_ball = std::make_shared<SimulatorBall>(physics_world.getPhysicsBall());
-
-    for (auto& robot_pair : yellow_simulator_robots)
-    {
-        robot_pair.first->clearBallInDribblerArea();
-    }
-
-    for (auto& robot_pair : blue_simulator_robots)
-    {
-        robot_pair.first->clearBallInDribblerArea();
-    }
 }
 
 void Simulator::removeBall()
@@ -216,7 +210,8 @@ World Simulator::getWorld() const
     Ball ball = Ball(Point(0, 0), Vector(0, 0), timestamp);
     if (physics_world.getBallState())
     {
-        ball = Ball(BallState(physics_world.getBallState().value()), timestamp);
+        ball =
+            Ball(TimestampedBallState(physics_world.getBallState().value(), timestamp));
     }
 
     // Note: The simulator currently makes the invariant that friendly robots
@@ -225,13 +220,15 @@ World Simulator::getWorld() const
     std::vector<Robot> friendly_team_robots;
     for (const auto& robot_state : physics_world.getYellowRobotStates())
     {
-        Robot robot(robot_state.id, robot_state.robot_state, timestamp);
+        TimestampedRobotState timestamped_robot_state(robot_state.robot_state, timestamp);
+        Robot robot(robot_state.id, timestamped_robot_state);
         friendly_team_robots.emplace_back(robot);
     }
     std::vector<Robot> enemy_team_robots;
     for (const auto& robot_state : physics_world.getBlueRobotStates())
     {
-        Robot robot(robot_state.id, robot_state.robot_state, timestamp);
+        TimestampedRobotState timestamped_robot_state(robot_state.robot_state, timestamp);
+        Robot robot(robot_state.id, timestamped_robot_state);
         enemy_team_robots.emplace_back(robot);
     }
 

@@ -58,16 +58,18 @@ namespace TestUtil
 
     World setBallPosition(World world, Point ball_position, Timestamp timestamp)
     {
-        BallState ball_state(ball_position, world.ball().velocity());
-        world.updateBall(Ball(ball_state, timestamp));
+        TimestampedBallState ballState =
+            TimestampedBallState(ball_position, world.ball().velocity(), timestamp);
+        world.updateBallStateWithTimestamp(ballState);
 
         return world;
     }
 
     World setBallVelocity(World world, Vector ball_velocity, Timestamp timestamp)
     {
-        BallState ball_state(world.ball().position(), ball_velocity);
-        world.updateBall(Ball(ball_state, timestamp));
+        TimestampedBallState ballState =
+            TimestampedBallState(world.ball().position(), ball_velocity, timestamp);
+        world.updateBallStateWithTimestamp(ballState);
 
         return world;
     }

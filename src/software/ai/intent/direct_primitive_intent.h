@@ -20,8 +20,6 @@ class DirectPrimitiveIntent : public Intent
     explicit DirectPrimitiveIntent(unsigned int robot_id, unsigned int priority,
                                    TbotsProto::Primitive primitive_msg);
 
-    DirectPrimitiveIntent() = delete;
-
     void accept(IntentVisitor& visitor) const override;
 
     /**

@@ -20,6 +20,7 @@ cc_library(
         "//software/geom:polygon",
         "//software/geom:vector",
         "//software/geom/algorithms",
+        "//software/simulation/physics:physics_world",
         "//software/world",
         "//software/world:robot_state",
         "@gtest//:gtest_main",

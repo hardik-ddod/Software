@@ -32,7 +32,8 @@ bool CornerKickPlay::isApplicable(const World &world) const
 bool CornerKickPlay::invariantHolds(const World &world) const
 {
     return (world.gameState().isPlaying() || world.gameState().isReadyState()) &&
-           (world.getTeamWithPossession() == TeamSide::FRIENDLY);
+           (!teamHasPossession(world, world.enemyTeam()) ||
+            teamPassInProgress(world, world.friendlyTeam()));
 }
 
 void CornerKickPlay::getNextTactics(TacticCoroutine::push_type &yield, const World &world)
@@ -200,8 +201,8 @@ Pass CornerKickPlay::setupPass(TacticCoroutine::push_type &yield,
 
         Duration time_since_commit_stage_start =
             world.getMostRecentTimestamp() - commit_stage_start_time;
-        min_score = 1 - std::min(time_since_commit_stage_start.toSeconds() /
-                                     MAX_TIME_TO_COMMIT_TO_PASS.toSeconds(),
+        min_score = 1 - std::min(time_since_commit_stage_start.getSeconds() /
+                                     MAX_TIME_TO_COMMIT_TO_PASS.getSeconds(),
                                  1.0);
     } while (best_pass_and_score_so_far.rating < min_score);
 

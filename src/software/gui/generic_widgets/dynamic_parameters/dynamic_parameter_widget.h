@@ -16,17 +16,21 @@ class DynamicParameterWidget : public QScrollArea
     Q_OBJECT
 
    public:
-    explicit DynamicParameterWidget(QWidget* parent = nullptr);
+    explicit DynamicParameterWidget(QWidget* parent = 0);
 
+   private:
     /**
      * A helper function to recursively setup all parameters and sub-configs of the given
      * config.
      *
+     * @pre the params_widget must have an initialized layout (ie. the layout must
+     * not be null)
+     *
+     * @param params_widget The widget to add parameters to
      * @param config The config to setup
      */
-    void setupParameters(std::shared_ptr<Config> config);
+    void setupParametersHelper(QWidget* params_widget, std::shared_ptr<Config> config);
 
-   private:
     /**
      * Creates a widget that contains the components necessary to display and control a
      * boolean Parameter for the AI
@@ -63,6 +67,4 @@ class DynamicParameterWidget : public QScrollArea
      */
     static QWidget* createStringParameter(
         std::shared_ptr<Parameter<std::string>> parameter);
-
-    QWidget* params_widget;
 };

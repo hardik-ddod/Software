@@ -16,6 +16,8 @@
 class HaltTestPlay : public Play
 {
    public:
+    static const std::string name;
+
     HaltTestPlay() = default;
 
     bool isApplicable(const World &world) const override;

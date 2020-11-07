@@ -12,7 +12,6 @@ cc_binary(
         "//software/gui/full_system:threaded_full_system_gui",
         "//software/logger",
         "//software/parameter:dynamic_parameters",
-        "//software/proto/logging:proto_logger",
         "//software/sensor_fusion:threaded_sensor_fusion",
         "//software/util/design_patterns:generic_factory",
         "@boost//:program_options",

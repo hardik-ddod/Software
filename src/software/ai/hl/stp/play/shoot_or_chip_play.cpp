@@ -29,7 +29,7 @@ bool ShootOrChipPlay::isApplicable(const World &world) const
 bool ShootOrChipPlay::invariantHolds(const World &world) const
 {
     return world.gameState().isPlaying() &&
-           (world.getTeamWithPossession() == TeamSide::FRIENDLY);
+           teamHasPossession(world, world.friendlyTeam());
 }
 
 void ShootOrChipPlay::getNextTactics(TacticCoroutine::push_type &yield,

@@ -9,6 +9,7 @@
 #include "software/sensor_fusion/filter/vision_detection.h"
 #include "software/time/timestamp.h"
 #include "software/world/ball.h"
+#include "software/world/timestamped_ball_state.h"
 
 /**
  * Given ball data from SSL Vision, filters and returns the position/velocity of the
@@ -57,10 +58,10 @@ class BallFilter
      * @param filter_area The area within which the ball filter will work. Any detections
      * outside of this area will be ignored.
      *
-     * @return The new ball based on the estimated state of the ball given the new data.
-     * If a filtered result cannot be calculated, returns std::nullopt
+     * @return The new estimated state of the ball given the new data. If a filtered
+     * result cannot be calculated, returns std::nullopt
      */
-    std::optional<Ball> estimateBallState(
+    std::optional<TimestampedBallState> estimateBallState(
         const std::vector<BallDetection>& new_ball_detections,
         const Rectangle& filter_area);
 
@@ -105,10 +106,10 @@ class BallFilter
      *
      * @param ball_detections The detections to filter
      *
-     * @return The new ball based on the filtered state. If a filtered result cannot be
+     * @return The filtered current state of the ball. if a filtered result cannot be
      * calculated, returns std::nullopt
      */
-    static std::optional<Ball> estimateBallStateFromBuffer(
+    static std::optional<TimestampedBallState> estimateBallStateFromBuffer(
         boost::circular_buffer<BallDetection> ball_detections);
 
     /**

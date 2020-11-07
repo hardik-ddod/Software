@@ -30,8 +30,6 @@ class ReceiverTactic : public Tactic
                             const Team& enemy_team, const Pass pass, const Ball& ball,
                             bool loop_forever);
 
-    ReceiverTactic() = delete;
-
     /**
      * Updates the world parameters for this ReceiverTactic.
      *

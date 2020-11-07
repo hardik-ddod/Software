@@ -10,6 +10,8 @@
 class DefensePlay : public Play
 {
    public:
+    static const std::string name;
+
     DefensePlay() = default;
 
     bool isApplicable(const World &world) const override;

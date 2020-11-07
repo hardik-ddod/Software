@@ -7,6 +7,7 @@
 #include "software/world/field.h"
 #include "software/world/game_state.h"
 #include "software/world/team.h"
+#include "software/world/timestamped_ball_state.h"
 
 /**
  * The world object describes the entire state of the world, which for us is all the
@@ -38,9 +39,9 @@ class World final
     /**
      * Updates the state of the ball in the world with the new ball data
      *
-     * @param new_ball A Ball containing new ball information
+     * @param new_ball_data A BallState containing new ball information
      */
-    void updateBall(const Ball& new_ball);
+    void updateBallStateWithTimestamp(const TimestampedBallState& new_ball_state);
 
     /**
      * Updates the state of the friendly team in the world with the new team data
@@ -144,28 +145,27 @@ class World final
     const Timestamp getMostRecentTimestamp() const;
 
     /**
-     * Updates the last update timestamp
+     * Gets the update Timestamp history stored World
      *
-     * @param timestamp The last time this World was updated
+     * @return returns circular_buffer<Timestamp> : The Timestamp history stored in the
+     * World
+     */
+    boost::circular_buffer<Timestamp> getTimestampHistory();
+
+    /**
+     * Searches all member objects of world for the most recent Timestamp value
      *
-     * @throws std::invalid_argument if timestamp is older than the current last update
-     * timestamp
+     */
+    Timestamp getMostRecentTimestampFromMembers();
+
+    /**
+     * Updates the timestamp history for World to include a new timestamp (On the
+     * condition that the parameter Timestamp is newer than any Timestamp already in the
+     * history)
+     *
+     * @param Timestamp corresponding to when the World was last updated
      */
     void updateTimestamp(Timestamp timestamp);
-
-    /**
-     * Sets the team with possession
-     *
-     * @param team_with_possesion The team with possession
-     */
-    void setTeamWithPossession(TeamSide team_with_possesion);
-
-    /**
-     * Gets the team with possession
-     *
-     * @return The team with possession
-     */
-    TeamSide getTeamWithPossession() const;
 
     /**
      * Defines the equality operator for a World. Worlds are equal if their field, ball
@@ -189,23 +189,17 @@ class World final
     static constexpr unsigned int REFEREE_COMMAND_BUFFER_SIZE = 3;
 
    private:
-    /**
-     * Searches all member objects of world for the most recent Timestamp value
-     *
-     */
-    Timestamp getMostRecentTimestampFromMembers();
-
     Field field_;
     Ball ball_;
     Team friendly_team_;
     Team enemy_team_;
     GameState current_game_state_;
     RefereeStage current_referee_stage_;
-    Timestamp last_update_timestamp_;
+    // All previous timestamps of when the world was updated, with the most recent
+    // timestamp at the front of the queue,
+    boost::circular_buffer<Timestamp> last_update_timestamps;
     // A small buffer that stores previous referee command
-    boost::circular_buffer<RefereeCommand> referee_command_history_;
+    boost::circular_buffer<RefereeCommand> referee_command_history;
     // A small buffer that stores previous referee stage
-    boost::circular_buffer<RefereeStage> referee_stage_history_;
-    // which team has possession of the ball
-    TeamSide team_with_possesion_;
+    boost::circular_buffer<RefereeStage> referee_stage_history;
 };

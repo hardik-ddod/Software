@@ -116,8 +116,7 @@ void app_direct_control_primitive_start(TbotsProto_DirectControlPrimitive prim_m
     app_dribbler_setSpeed(dribbler, (uint32_t)prim_msg.dribbler_speed_rpm);
 }
 
-static void app_direct_control_primitive_tick(void* void_state_ptr,
-                                              FirmwareWorld_t* world)
+static void direct_control_tick(void* void_state_ptr, FirmwareWorld_t* world)
 {
     DirectControlPrimitiveState_t* state = (DirectControlPrimitiveState_t*)void_state_ptr;
     if (state->direct_velocity)
@@ -134,6 +133,6 @@ static void app_direct_control_primitive_tick(void* void_state_ptr,
  */
 const primitive_t DIRECT_CONTROL_PRIMITIVE = {
     .direct        = true,
-    .tick          = &app_direct_control_primitive_tick,
+    .tick          = &direct_control_tick,
     .create_state  = &createDirectControlPrimitiveState_t,
     .destroy_state = &destroyDirectControlPrimitiveState_t};

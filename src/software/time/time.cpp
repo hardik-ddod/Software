@@ -9,12 +9,12 @@ Time::Time(double time_seconds)
     this->time_in_seconds = time_seconds;
 }
 
-double Time::toSeconds() const
+double Time::getSeconds() const
 {
     return time_in_seconds;
 }
 
-double Time::toMilliseconds() const
+double Time::getMilliseconds() const
 {
     return time_in_seconds * MILLISECONDS_PER_SECOND;
 }

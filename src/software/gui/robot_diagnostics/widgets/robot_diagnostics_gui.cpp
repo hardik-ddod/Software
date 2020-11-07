@@ -30,9 +30,9 @@ RobotDiagnosticsGUI::RobotDiagnosticsGUI(
         auto direct_control_primitive = createDirectControlPrimitiveFromUI();
         pushPrimitiveSetToBuffer(*direct_control_primitive);
     });
-    update_timer->start(static_cast<int>(update_timer_interval.toMilliseconds()));
+    update_timer->start(static_cast<int>(update_timer_interval.getMilliseconds()));
     push_primitive_timer->start(
-        static_cast<int>(push_primitive_timer_interval.toMilliseconds()));
+        static_cast<int>(push_primitive_timer_interval.getMilliseconds()));
 
     setupWidgets();
 }
@@ -67,7 +67,7 @@ void RobotDiagnosticsGUI::onDirectPerWheelPowerChanged(
     pushPrimitiveSetToBuffer(*direct_control_primitive);
 }
 
-void RobotDiagnosticsGUI::onDribblerRPMChanged(double dribbler_rpm)
+void RobotDiagnosticsGUI::onDribblerPowerChanged(double dribbler_power)
 {
     auto direct_control_primitive = createDirectControlPrimitiveFromUI();
     pushPrimitiveSetToBuffer(*direct_control_primitive);
@@ -83,7 +83,7 @@ RobotDiagnosticsGUI::createDirectControlPrimitiveFromUI()
     setChickCommandPrimitiveFromUI(*direct_control_primitive_msg);
 
     direct_control_primitive_msg->mutable_direct_control()->set_dribbler_speed_rpm(
-        main_widget->lineEdit_dribbler_rpm->text().toFloat());
+        main_widget->lineEdit_dribbler_power->text().toFloat());
 
     return direct_control_primitive_msg;
 }
@@ -207,7 +207,7 @@ void RobotDiagnosticsGUI::setupWidgets()
     setupChicker(main_widget, boost::bind(&RobotDiagnosticsGUI::onChickerStateChanged,
                                           this, _1, _2, _3));
     setupDribbler(main_widget,
-                  boost::bind(&RobotDiagnosticsGUI::onDribblerRPMChanged, this, _1));
+                  boost::bind(&RobotDiagnosticsGUI::onDribblerPowerChanged, this, _1));
     setupDrive(
         main_widget,
         boost::bind(&RobotDiagnosticsGUI::onDirectPerWheelPowerChanged, this, _1, _2),
