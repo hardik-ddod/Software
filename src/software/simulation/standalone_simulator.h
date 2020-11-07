@@ -27,11 +27,9 @@ class StandaloneSimulator
      * Creates a new StandaloneSimulator, and starts the simulation.
      *
      * @param standalone_simulator_config The config for the StandaloneSimulator
-     * @param simulator_config The config for the Simulator
      */
     explicit StandaloneSimulator(
-        std::shared_ptr<StandaloneSimulatorConfig> standalone_simulator_config,
-        std::shared_ptr<SimulatorConfig> simulator_config);
+        std::shared_ptr<StandaloneSimulatorConfig> standalone_simulator_config);
     StandaloneSimulator() = delete;
 
     /**

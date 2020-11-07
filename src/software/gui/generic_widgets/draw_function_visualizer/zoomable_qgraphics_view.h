@@ -11,7 +11,7 @@ class ZoomableQGraphicsView : public QGraphicsView
 {
     Q_OBJECT
    public:
-    explicit ZoomableQGraphicsView(QWidget *parent = nullptr);
+    explicit ZoomableQGraphicsView(QWidget *parent = 0);
 
    protected slots:
     void wheelEvent(QWheelEvent *event);

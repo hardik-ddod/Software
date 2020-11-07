@@ -1,6 +1,5 @@
 #pragma once
 
-#include "shared/constants.h"
 #include "software/multithreading/thread_safe_buffer.h"
 
 /**
@@ -22,16 +21,7 @@ class Observer
      */
     virtual void receiveValue(T val) final;
 
-    /**
-     * Calculate the data received per second using the internal time buffer
-     *
-     * @return the data received per second
-     */
-    virtual double getDataReceivedPerSecond() final;
-
     virtual ~Observer() = default;
-
-    static constexpr size_t TIME_BUFFER_SIZE = 5;
 
    protected:
     /**
@@ -70,7 +60,6 @@ class Observer
 
    private:
     ThreadSafeBuffer<T> buffer;
-    boost::circular_buffer<std::chrono::milliseconds> receive_time_buffer;
 };
 
 #include "software/multithreading/observer.tpp"

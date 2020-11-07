@@ -35,8 +35,6 @@ class Action
      */
     explicit Action(bool loop_forever);
 
-    Action() = delete;
-
     /**
      * Returns true if the Action is done and false otherwise. The Action is considered
      * done when its coroutine is done (the calculateNextIntent() function has no more

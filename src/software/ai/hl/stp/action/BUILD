@@ -7,7 +7,6 @@ cc_library(
     deps = [
         ":action",
         "//shared:constants",
-        "//software/ai/evaluation:ball",
         "//software/ai/intent:chip_intent",
         "//software/ai/intent:move_intent",
         "//software/geom:polygon",
@@ -35,6 +34,7 @@ cc_library(
         ":move_action",
         "//shared:constants",
         "//software/ai/evaluation:intercept",
+        "//software/ai/evaluation:robot",
         "//software/ai/intent:move_intent",
         "//software/geom/algorithms",
         "//software/logger",
@@ -64,7 +64,6 @@ cc_library(
     deps = [
         ":action",
         "//shared:constants",
-        "//software/ai/evaluation:ball",
         "//software/ai/intent:kick_intent",
         "//software/ai/intent:move_intent",
         "//software/geom:polygon",

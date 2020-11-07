@@ -2,9 +2,13 @@
 
 #include <optional>
 
+#include "software/geom/angle.h"
+#include "software/geom/angular_velocity.h"
+#include "software/geom/point.h"
+#include "software/geom/vector.h"
 #include "software/time/timestamp.h"
 #include "software/world/robot_capabilities.h"
-#include "software/world/robot_state.h"
+#include "software/world/timestamped_robot_state.h"
 
 /**
  * Defines an SSL robot
@@ -23,11 +27,13 @@ class Robot
      * per second
      * @param timestamp The timestamp at which the robot was observed to be in the given
      * state
+     * @param history_size The number of previous robot states that should be stored. Must
+     * be > 0
      * @param unavailable_capabilities The set of unavailable capabilities for this robot
      */
     explicit Robot(RobotId id, const Point &position, const Vector &velocity,
                    const Angle &orientation, const AngularVelocity &angular_velocity,
-                   const Timestamp &timestamp,
+                   const Timestamp &timestamp, unsigned int history_size = 20,
                    const std::set<RobotCapability> &unavailable_capabilities =
                        std::set<RobotCapability>());
 
@@ -36,36 +42,31 @@ class Robot
      *
      * @param id The id of the robot to create
      * @param initial_state The initial state of the robot
-     * @param timestamp The timestamp at which the robot was observed to be in the given
-     * state
+     * @param history_size The number of previous robot states that should be stored. Must
+     * be > 0
      * @param unavailable_capabilities The set of unavailable capabilities for this robot
      */
-    explicit Robot(RobotId id, const RobotState &initial_state,
-                   const Timestamp &timestamp,
+    explicit Robot(RobotId id, const TimestampedRobotState &initial_state,
+                   unsigned int history_size = 20,
                    const std::set<RobotCapability> &unavailable_capabilities =
                        std::set<RobotCapability>());
 
     /**
-     * Updates the robot with new data
+     * Updates the robot with new data, updating the current state as well as the
+     * predictive model
      *
-     * @param robot_state A robot state containing new robot data
-     * @param timestamp New timestamp
+     * @param new_robot_state A robot state containing new robot data
      */
-    void updateState(const RobotState &state, const Timestamp &timestamp);
+    void updateState(const TimestampedRobotState &new_robot_state);
+
+    TimestampedRobotState currentState() const;
 
     /**
-     * Gets the current state of the robot
+     * Returns the timestamp for when this robot's data was last updated
      *
-     * @return current state of the robot
+     * @return the timestamp for when this robot's data was last updated
      */
-    RobotState currentState() const;
-
-    /**
-     * Returns the current timestamp of this robot
-     *
-     * @return the current timestamp
-     */
-    Timestamp timestamp() const;
+    Timestamp lastUpdateTimestamp() const;
 
     /**
      * Returns the id of the robot
@@ -103,18 +104,26 @@ class Robot
     AngularVelocity angularVelocity() const;
 
     /**
+     * Gets the buffer which holds all of the previous states
+     *
+     * @return circular_buffer containing all previous states up to the history_size field
+     * cap
+     */
+    RobotHistory getPreviousStates() const;
+
+    /**
      * Returns the missing capabilities of the robot
      *
      * @return the missing capabilities of the robot
      */
-    const std::set<RobotCapability> &getUnavailableCapabilities() const;
+    const std::set<RobotCapability> &getCapabilitiesBlacklist() const;
 
     /**
-     * Returns all available capabilities this robot has
+     * Returns all capabilities this robot has
      *
-     * @return Returns all available capabilities this robot has
+     * @return Returns all capabilities this robot has
      */
-    std::set<RobotCapability> getAvailableCapabilities() const;
+    std::set<RobotCapability> getCapabilitiesWhitelist() const;
 
     /**
      * Returns the mutable hardware capabilities of the robot
@@ -122,15 +131,6 @@ class Robot
      * @return the mutable hardware capabilities of the robot
      */
     std::set<RobotCapability> &getMutableRobotCapabilities();
-
-    /**
-     * Decides if a point is near the dribbler of the robot
-     *
-     * @param test_point The point to check
-     *
-     * @return whether the test_point is near the dribbler of the robot
-     */
-    bool isNearDribbler(const Point &test_point) const;
 
     /**
      * Defines the equality operator for a Robot. Robots are equal if their IDs and
@@ -173,8 +173,11 @@ class Robot
    private:
     // The id of this robot
     RobotId id_;
-    RobotState current_state_;
-    Timestamp timestamp_;
+    // All previous states of the robot, with the most recent state at the front of the
+    // queue, This buffer will never be empty as it's initialized with a RobotState on
+    // creation
+    // The buffer size (history_size) must be > 0
+    RobotHistory states_;
     // The hardware capabilities of the robot, generated from
     // RobotCapabilityFlags::broken_dribblers/chippers/kickers dynamic parameters
     std::set<RobotCapability> unavailable_capabilities_;

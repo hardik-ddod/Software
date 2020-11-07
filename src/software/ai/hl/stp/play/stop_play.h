@@ -10,6 +10,8 @@
 class StopPlay : public Play
 {
    public:
+    static const std::string name;
+
     StopPlay() = default;
 
     bool isApplicable(const World &world) const override;

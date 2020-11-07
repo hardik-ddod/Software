@@ -22,8 +22,6 @@ class PenaltyKickTactic : public Tactic
                                const std::optional<Robot> &enemy_goalie,
                                bool loop_forever);
 
-    PenaltyKickTactic() = delete;
-
     /**
      * Updates the world parameters for this PenaltyKickTactic.
      *

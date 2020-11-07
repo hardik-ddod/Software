@@ -1,6 +1,7 @@
 #include "software/ai/hl/stp/tactic/defense_shadow_enemy_tactic.h"
 
 #include "software/ai/evaluation/calc_best_shot.h"
+#include "software/ai/evaluation/robot.h"
 #include "software/ai/hl/stp/action/move_action.h"
 #include "software/ai/hl/stp/action/stop_action.h"
 #include "software/logger/logger.h"
@@ -90,7 +91,8 @@ void DefenseShadowEnemyTactic::calculateNextAction(ActionCoroutine::push_type &y
 
         // try to steal the ball and yeet it away if the enemy robot has already
         // received the pass
-        if (enemy_robot.isNearDribbler(ball.position()) &&
+        if (*robotHasPossession(ball.getPreviousStates(),
+                                enemy_robot.getPreviousStates()) &&
             ball.velocity().length() < DynamicParameters->getAIConfig()
                                            ->getDefenseShadowEnemyTacticConfig()
                                            ->BallStealSpeed()

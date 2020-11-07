@@ -33,22 +33,21 @@ TEST_F(RobotTest, construct_with_all_params)
     EXPECT_EQ(Vector(-0.3, 0), robot.velocity());
     EXPECT_EQ(Angle::fromRadians(2.2), robot.orientation());
     EXPECT_EQ(AngularVelocity::fromRadians(-0.6), robot.angularVelocity());
-    EXPECT_EQ(current_time, robot.timestamp());
+    EXPECT_EQ(current_time, robot.lastUpdateTimestamp());
 }
 
 TEST_F(RobotTest, construct_with_initial_state)
 {
-    Robot robot = Robot(3,
-                        RobotState(Point(1, 1), Vector(-0.3, 0), Angle::fromRadians(2.2),
-                                   AngularVelocity::fromRadians(-0.6)),
-                        current_time);
+    Robot robot = Robot(
+        3, TimestampedRobotState(Point(1, 1), Vector(-0.3, 0), Angle::fromRadians(2.2),
+                                 AngularVelocity::fromRadians(-0.6), current_time));
 
     EXPECT_EQ(3, robot.id());
     EXPECT_EQ(Point(1, 1), robot.position());
     EXPECT_EQ(Vector(-0.3, 0), robot.velocity());
     EXPECT_EQ(Angle::fromRadians(2.2), robot.orientation());
     EXPECT_EQ(AngularVelocity::fromRadians(-0.6), robot.angularVelocity());
-    EXPECT_EQ(current_time, robot.timestamp());
+    EXPECT_EQ(current_time, robot.lastUpdateTimestamp());
 }
 
 TEST_F(RobotTest, update_state_with_all_params)
@@ -56,16 +55,16 @@ TEST_F(RobotTest, update_state_with_all_params)
     Robot robot =
         Robot(0, Point(), Vector(), Angle::zero(), AngularVelocity::zero(), current_time);
 
-    robot.updateState(RobotState(Point(-1.2, 3), Vector(2.2, -0.05), Angle::quarter(),
-                                 AngularVelocity::fromRadians(1.1)),
-                      half_second_future);
+    robot.updateState(
+        TimestampedRobotState(Point(-1.2, 3), Vector(2.2, -0.05), Angle::quarter(),
+                              AngularVelocity::fromRadians(1.1), half_second_future));
 
     EXPECT_EQ(0, robot.id());
     EXPECT_EQ(Point(-1.2, 3), robot.position());
     EXPECT_EQ(Vector(2.2, -0.05), robot.velocity());
     EXPECT_EQ(Angle::quarter(), robot.orientation());
     EXPECT_EQ(AngularVelocity::fromRadians(1.1), robot.angularVelocity());
-    EXPECT_EQ(half_second_future, robot.timestamp());
+    EXPECT_EQ(half_second_future, robot.lastUpdateTimestamp());
 }
 
 TEST_F(RobotTest, update_state_with_new_robot)
@@ -73,13 +72,13 @@ TEST_F(RobotTest, update_state_with_new_robot)
     Robot robot =
         Robot(0, Point(), Vector(), Angle::zero(), AngularVelocity::zero(), current_time);
 
-    RobotState update_robot(Point(-1.2, 3), robot.velocity(), Angle::quarter(),
-                            robot.angularVelocity());
+    TimestampedRobotState update_robot =
+        TimestampedRobotState(Point(-1.2, 3), robot.velocity(), Angle::quarter(),
+                              robot.angularVelocity(), current_time);
 
-    robot.updateState(update_robot, current_time);
+    robot.updateState(update_robot);
 
     EXPECT_EQ(robot.currentState(), update_robot);
-    EXPECT_EQ(robot.timestamp(), current_time);
 }
 
 TEST_F(RobotTest, get_position_at_current_time)
@@ -189,92 +188,151 @@ TEST_F(RobotTest, equality_operator_robots_with_different_timestamp)
     EXPECT_EQ(robot, robot_other);
 }
 
-TEST(RobotIsNearDribblerTest, ball_near_dribbler_directly_in_front_of_robot)
+TEST_F(RobotTest, get_position_history)
 {
-    Point ball_position = Point(0.07, 0);
-    Timestamp timestamp = Timestamp::fromSeconds(0);
+    std::vector prevPositions = {Point(-1.3, 3), Point(-1.2, 3), Point(3, 1.2)};
 
-    Robot robot = Robot(0, Point(0, 0), Vector(), Angle::zero(), AngularVelocity::zero(),
-                        timestamp);
+    Robot robot = Robot(0, Point(3, 1.2), Vector(-3, 1), Angle::fromDegrees(0),
+                        AngularVelocity::fromDegrees(25), current_time, 3);
+    robot.updateState(
+        TimestampedRobotState(Point(-1.2, 3), Vector(2.2, -0.05), Angle::quarter(),
+                              AngularVelocity::fromRadians(1.1), half_second_future));
+    robot.updateState(
+        TimestampedRobotState(Point(-1.3, 3), Vector(2.3, -0.05), Angle::quarter(),
+                              AngularVelocity::fromRadians(1.1), half_second_future));
 
-    EXPECT_TRUE(robot.isNearDribbler(ball_position));
+    RobotHistory previous_states = robot.getPreviousStates();
+    std::vector<Point> previous_positions{};
+    for (size_t i = 0; i < previous_states.size(); i++)
+    {
+        previous_positions.push_back(previous_states.at(i).state().position());
+    }
+    EXPECT_EQ(prevPositions, previous_positions);
 }
 
-TEST(RobotIsNearDribblerTest, ball_near_dribbler_ball_to_side_of_robot)
+TEST_F(RobotTest, get_velocity_history)
 {
-    Point ball_position = Point(0.07, 0);
-    Timestamp timestamp = Timestamp::fromSeconds(0);
+    std::vector prevVelocities = {Vector(2.3, -0.05), Vector(2.2, -0.05), Vector(-3, 1)};
 
-    Robot robot = Robot(0, Point(0, 0), Vector(), Angle::half(), AngularVelocity::zero(),
-                        timestamp);
-    EXPECT_FALSE(robot.isNearDribbler(ball_position));
+    Robot robot = Robot(0, Point(3, 1.2), Vector(-3, 1), Angle::fromDegrees(0),
+                        AngularVelocity::fromDegrees(25), current_time, 3);
+    robot.updateState(
+        TimestampedRobotState(Point(-1.2, 3), Vector(2.2, -0.05), Angle::quarter(),
+                              AngularVelocity::fromRadians(1.1), half_second_future));
+    robot.updateState(
+        TimestampedRobotState(Point(-1.3, 3), Vector(2.3, -0.05), Angle::quarter(),
+                              AngularVelocity::fromRadians(1.1), half_second_future));
+
+    RobotHistory previous_states = robot.getPreviousStates();
+    std::vector<Vector> previous_velocities{};
+    for (size_t i = 0; i < previous_states.size(); i++)
+    {
+        previous_velocities.push_back(previous_states.at(i).state().velocity());
+    }
+    EXPECT_EQ(prevVelocities, previous_velocities);
 }
 
-TEST(RobotIsNearDribblerTest, ball_near_dribbler_robot_moving_ball_in_dribbler)
+TEST_F(RobotTest, get_orientation_history)
 {
-    Point ball_position = Point(0.07, 0);
-    Timestamp timestamp = Timestamp::fromSeconds(1);
+    std::vector prevOrientations = {Angle::quarter(), Angle::quarter(),
+                                    Angle::fromDegrees(0)};
 
-    Robot robot = Robot(0, Point(0, 0), Vector(1, 1), Angle::zero(),
-                        AngularVelocity::zero(), timestamp);
+    Robot robot = Robot(0, Point(3, 1.2), Vector(-3, 1), Angle::fromDegrees(0),
+                        AngularVelocity::fromDegrees(25), current_time, 3);
+    robot.updateState(
+        TimestampedRobotState(Point(-1.2, 3), Vector(2.2, -0.05), Angle::quarter(),
+                              AngularVelocity::fromRadians(1.1), half_second_future));
+    robot.updateState(
+        TimestampedRobotState(Point(-1.3, 3), Vector(2.3, -0.05), Angle::quarter(),
+                              AngularVelocity::fromRadians(1.1), half_second_future));
 
-    EXPECT_TRUE(robot.isNearDribbler(ball_position));
+    RobotHistory previous_states = robot.getPreviousStates();
+    std::vector<Angle> previous_orientations{};
+    for (size_t i = 0; i < previous_states.size(); i++)
+    {
+        previous_orientations.push_back(previous_states.at(i).state().orientation());
+    }
+    EXPECT_EQ(prevOrientations, previous_orientations);
 }
 
-TEST(RobotIsNearDribblerTest, ball_near_dribbler_ball_far_away_from_robot)
+TEST_F(RobotTest, get_angular_velocity_history)
 {
-    Point ball_position = Point(-1, -2);
-    Timestamp timestamp = Timestamp::fromSeconds(0);
+    std::vector prevAngularVelocities = {
+        AngularVelocity::fromRadians(1.2),
+        AngularVelocity::fromRadians(1.1),
+        AngularVelocity::fromDegrees(25),
+    };
 
-    Robot robot = Robot(0, Point(0, 0), Vector(), Angle::zero(), AngularVelocity::zero(),
-                        timestamp);
+    Robot robot = Robot(0, Point(3, 1.2), Vector(-3, 1), Angle::fromDegrees(0),
+                        AngularVelocity::fromDegrees(25), current_time, 3);
+    robot.updateState(
+        TimestampedRobotState(Point(-1.2, 3), Vector(2.2, -0.05), Angle::quarter(),
+                              AngularVelocity::fromRadians(1.1), half_second_future));
+    robot.updateState(
+        TimestampedRobotState(Point(-1.3, 3), Vector(2.3, -0.05), Angle::quarter(),
+                              AngularVelocity::fromRadians(1.2), half_second_future));
 
-    EXPECT_FALSE(robot.isNearDribbler(ball_position));
+    RobotHistory previous_states = robot.getPreviousStates();
+    std::vector<AngularVelocity> previous_angular_velocities{};
+    for (size_t i = 0; i < previous_states.size(); i++)
+    {
+        previous_angular_velocities.push_back(
+            previous_states.at(i).state().angularVelocity());
+    }
+    EXPECT_EQ(prevAngularVelocities, previous_angular_velocities);
 }
 
-TEST(RobotIsNearDribblerTest, ball_near_dribbler_robot_on_angle_with_ball_in_dribbler)
+TEST_F(RobotTest, get_timestamp_history)
 {
-    Point ball_position = Point(0.035, 0.06);
-    Timestamp timestamp = Timestamp::fromSeconds(0);
+    std::vector prevTimestamps = {half_second_future, half_second_future, current_time};
 
-    Robot robot = Robot(0, Point(0, 0), Vector(), Angle::fromDegrees(59.74356),
-                        AngularVelocity::zero(), timestamp);
+    Robot robot = Robot(0, Point(3, 1.2), Vector(-3, 1), Angle::fromDegrees(0),
+                        AngularVelocity::fromDegrees(25), current_time, 3);
+    robot.updateState(
+        TimestampedRobotState(Point(-1.2, 3), Vector(2.2, -0.05), Angle::quarter(),
+                              AngularVelocity::fromRadians(1.1), half_second_future));
+    robot.updateState(
+        TimestampedRobotState(Point(-1.3, 3), Vector(2.3, -0.05), Angle::quarter(),
+                              AngularVelocity::fromRadians(1.2), half_second_future));
 
-    EXPECT_TRUE(robot.isNearDribbler(ball_position));
+    RobotHistory previous_states = robot.getPreviousStates();
+    std::vector<Timestamp> previous_timestamps{};
+    for (size_t i = 0; i < previous_states.size(); i++)
+    {
+        previous_timestamps.push_back(previous_states.at(i).timestamp());
+    }
+    EXPECT_EQ(prevTimestamps, previous_timestamps);
 }
 
-TEST_F(RobotTest, get_unavailable_capabilities)
+TEST_F(RobotTest, get_capabilities_blacklist)
 {
-    std::set<RobotCapability> unavailable_capabilities = {
+    std::set<RobotCapability> blacklist = {
         RobotCapability::Dribble,
         RobotCapability::Chip,
     };
 
-    Robot robot =
-        Robot(0, Point(3, 1.2), Vector(-3, 1), Angle::fromDegrees(0),
-              AngularVelocity::fromDegrees(25), current_time, unavailable_capabilities);
+    Robot robot = Robot(0, Point(3, 1.2), Vector(-3, 1), Angle::fromDegrees(0),
+                        AngularVelocity::fromDegrees(25), current_time, 3, blacklist);
 
-    EXPECT_EQ(unavailable_capabilities, robot.getUnavailableCapabilities());
+    EXPECT_EQ(blacklist, robot.getCapabilitiesBlacklist());
 }
 
-TEST_F(RobotTest, get_available_capabilities)
+TEST_F(RobotTest, get_capabilities_whitelist)
 {
-    std::set<RobotCapability> unavailable_capabilities = {
+    std::set<RobotCapability> blacklist = {
         RobotCapability::Dribble,
         RobotCapability::Chip,
     };
 
-    Robot robot =
-        Robot(0, Point(3, 1.2), Vector(-3, 1), Angle::fromDegrees(0),
-              AngularVelocity::fromDegrees(25), current_time, unavailable_capabilities);
+    Robot robot = Robot(0, Point(3, 1.2), Vector(-3, 1), Angle::fromDegrees(0),
+                        AngularVelocity::fromDegrees(25), current_time, 3, blacklist);
 
-    // available capabilities = all capabilities - unavailable capabilities
+    // whitelist = all capabilities - blacklist
     std::set<RobotCapability> all_capabilities = allRobotCapabilities();
-    std::set<RobotCapability> expected_capabilities;
-    std::set_difference(
-        all_capabilities.begin(), all_capabilities.end(),
-        unavailable_capabilities.begin(), unavailable_capabilities.end(),
-        std::inserter(expected_capabilities, expected_capabilities.begin()));
+    std::set<RobotCapability> expected_whitelist;
+    std::set_difference(all_capabilities.begin(), all_capabilities.end(),
+                        blacklist.begin(), blacklist.end(),
+                        std::inserter(expected_whitelist, expected_whitelist.begin()));
 
-    EXPECT_EQ(expected_capabilities, robot.getAvailableCapabilities());
+    EXPECT_EQ(expected_whitelist, robot.getCapabilitiesWhitelist());
 }

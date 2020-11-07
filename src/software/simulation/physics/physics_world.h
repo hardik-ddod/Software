@@ -3,7 +3,6 @@
 #include <Box2D/Box2D.h>
 
 #include "software/multithreading/thread_safe_buffer.h"
-#include "software/parameter/dynamic_parameters.h"
 #include "software/simulation/physics/physics_ball.h"
 #include "software/simulation/physics/physics_field.h"
 #include "software/simulation/physics/physics_robot.h"
@@ -26,11 +25,11 @@ class PhysicsWorld
      * Creates a new PhysicsWorld that will contain no robots and no ball.
      *
      * @param field The initial state of the field
-     * @param simulator_config The config to fetch parameters from
+     * @param ball_restitution The restitution for ball collisions
+     * @param ball_linear_damping The damping on the ball's linear motion
      */
-    explicit PhysicsWorld(const Field& field,
-                          std::shared_ptr<const SimulatorConfig> simulator_config =
-                              DynamicParameters->getSimulatorConfig());
+    explicit PhysicsWorld(const Field& field, double ball_restitution = 1.0,
+                          double ball_linear_damping = 0.0);
     PhysicsWorld() = delete;
 
     // Delete the copy and assignment operators because copying this class causes
@@ -230,7 +229,8 @@ class PhysicsWorld
 
     PhysicsField physics_field;
     std::shared_ptr<PhysicsBall> physics_ball;
-    std::shared_ptr<const SimulatorConfig> simulator_config;
+    const double ball_restitution;
+    const double ball_linear_damping;
     std::vector<std::shared_ptr<PhysicsRobot>> yellow_physics_robots;
     std::vector<std::shared_ptr<PhysicsRobot>> blue_physics_robots;
 };

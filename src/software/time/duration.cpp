@@ -22,7 +22,7 @@ const Duration Duration::fromMilliseconds(double milliseconds)
 
 bool Duration::operator==(const Duration &other) const
 {
-    return std::fabs(other.toSeconds() - toSeconds()) < EPSILON;
+    return std::fabs(other.getSeconds() - getSeconds()) < EPSILON;
 }
 
 bool Duration::operator!=(const Duration &other) const
@@ -32,7 +32,7 @@ bool Duration::operator!=(const Duration &other) const
 
 bool Duration::operator<(const Duration &other) const
 {
-    return (*this != other) && (toSeconds() < other.toSeconds());
+    return (*this != other) && (getSeconds() < other.getSeconds());
 }
 
 bool Duration::operator>=(const Duration &other) const
@@ -42,7 +42,7 @@ bool Duration::operator>=(const Duration &other) const
 
 bool Duration::operator>(const Duration &other) const
 {
-    return (*this != other) && (toSeconds() > other.toSeconds());
+    return (*this != other) && (getSeconds() > other.getSeconds());
 }
 
 bool Duration::operator<=(const Duration &other) const
@@ -52,17 +52,17 @@ bool Duration::operator<=(const Duration &other) const
 
 Duration Duration::operator+(const Duration &duration) const
 {
-    return Duration::fromSeconds(toSeconds() + duration.toSeconds());
+    return Duration::fromSeconds(getSeconds() + duration.getSeconds());
 }
 
 Duration Duration::operator-(const Duration &duration) const
 {
-    return Duration::fromSeconds(toSeconds() - duration.toSeconds());
+    return Duration::fromSeconds(getSeconds() - duration.getSeconds());
 }
 
 std::ostream &operator<<(std::ostream &output_stream, const Duration &duration)
 {
-    output_stream << std::setprecision(2) << std::fixed << duration.toSeconds() << "s";
+    output_stream << std::setprecision(2) << std::fixed << duration.getSeconds() << "s";
 
     return output_stream;
 }

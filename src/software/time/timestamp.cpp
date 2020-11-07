@@ -27,12 +27,12 @@ const Timestamp Timestamp::fromMilliseconds(double milliseconds)
 
 Timestamp Timestamp::operator+(const Duration &duration) const
 {
-    return Timestamp::fromSeconds(toSeconds() + duration.toSeconds());
+    return Timestamp::fromSeconds(getSeconds() + duration.getSeconds());
 }
 
 bool Timestamp::operator==(const Timestamp &other) const
 {
-    return std::fabs(other.toSeconds() - toSeconds()) < EPSILON;
+    return std::fabs(other.getSeconds() - getSeconds()) < EPSILON;
 }
 
 bool Timestamp::operator!=(const Timestamp &other) const
@@ -42,7 +42,7 @@ bool Timestamp::operator!=(const Timestamp &other) const
 
 bool Timestamp::operator<(const Timestamp &other) const
 {
-    return (*this != other) && (toSeconds() < other.toSeconds());
+    return (*this != other) && (getSeconds() < other.getSeconds());
 }
 
 bool Timestamp::operator>=(const Timestamp &other) const
@@ -52,7 +52,7 @@ bool Timestamp::operator>=(const Timestamp &other) const
 
 bool Timestamp::operator>(const Timestamp &other) const
 {
-    return (*this != other) && (toSeconds() > other.toSeconds());
+    return (*this != other) && (getSeconds() > other.getSeconds());
 }
 
 bool Timestamp::operator<=(const Timestamp &other) const
@@ -62,17 +62,17 @@ bool Timestamp::operator<=(const Timestamp &other) const
 
 Timestamp Timestamp::operator-(const Duration &duration) const
 {
-    return Timestamp::fromSeconds(toSeconds() - duration.toSeconds());
+    return Timestamp::fromSeconds(getSeconds() - duration.getSeconds());
 }
 
 Duration Timestamp::operator-(const Timestamp &timestamp) const
 {
-    return Duration::fromSeconds(toSeconds() - timestamp.toSeconds());
+    return Duration::fromSeconds(getSeconds() - timestamp.getSeconds());
 }
 
 std::ostream &operator<<(std::ostream &output_stream, const Timestamp &time)
 {
-    output_stream << std::setprecision(2) << std::fixed << time.toSeconds() << "s";
+    output_stream << std::setprecision(2) << std::fixed << time.getSeconds() << "s";
 
     return output_stream;
 }

@@ -5,12 +5,13 @@
 #include "shared/constants.h"
 #include "software/logger/logger.h"
 
-Team::Team(const Duration& robot_expiry_buffer_duration)
+Team::Team(const Duration& robot_expiry_buffer_duration, unsigned int buffer_size)
     : team_robots(),
       goalie_id(),
-      robot_expiry_buffer_duration(robot_expiry_buffer_duration),
-      last_update_timestamp()
+      robot_expiry_buffer_duration(robot_expiry_buffer_duration)
 {
+    // Set the size of the Timestamp history buffer
+    last_update_timestamps.set_capacity(buffer_size);
     updateTimestamp(getMostRecentTimestampFromRobots());
 }
 
@@ -42,7 +43,7 @@ void Team::updateRobots(const std::vector<Robot>& new_robots)
         if (it != team_robots.end())
         {
             // The robot already exists on the team. Find and update the robot
-            it->updateState(robot.currentState(), robot.timestamp());
+            it->updateState(robot.currentState());
         }
         else
         {
@@ -68,8 +69,8 @@ void Team::removeExpiredRobots(const Timestamp& timestamp)
     // has passed, then remove the robot from the team
     for (auto it = team_robots.begin(); it != team_robots.end();)
     {
-        Duration time_diff = timestamp - it->timestamp();
-        if (time_diff.toSeconds() < 0)
+        Duration time_diff = timestamp - it->lastUpdateTimestamp();
+        if (time_diff.getSeconds() < 0)
         {
             LOG(WARNING) << "Warning: tried to remove a robot at a negative time";
             it++;
@@ -119,7 +120,7 @@ std::size_t Team::numRobots() const
     return team_robots.size();
 }
 
-const Duration& Team::getRobotExpiryBufferDuration() const
+Duration Team::getRobotExpiryBufferDuration() const
 {
     return robot_expiry_buffer_duration;
 }
@@ -184,9 +185,14 @@ void Team::clearAllRobots()
     team_robots.clear();
 }
 
+boost::circular_buffer<Timestamp> Team::getTimestampHistory() const
+{
+    return last_update_timestamps;
+}
+
 Timestamp Team::getMostRecentTimestamp() const
 {
-    return last_update_timestamp;
+    return last_update_timestamps.front();
 }
 
 Timestamp Team::getMostRecentTimestampFromRobots()
@@ -197,37 +203,48 @@ Timestamp Team::getMostRecentTimestampFromRobots()
 
     for (Robot robot : robots)
     {
-        if (robot.timestamp() > most_recent_timestamp)
+        if (robot.lastUpdateTimestamp() > most_recent_timestamp)
         {
-            most_recent_timestamp = robot.timestamp();
+            most_recent_timestamp = robot.lastUpdateTimestamp();
         }
     }
 
     return most_recent_timestamp;
 }
 
-void Team::updateTimestamp(Timestamp timestamp)
+void Team::updateTimestamp(Timestamp time_stamp)
 {
+    // Check if the timestamp buffer is empty
+    if (last_update_timestamps.empty())
+    {
+        last_update_timestamps.push_front(time_stamp);
+    }
     // Check that the new timestamp is not older than the most recent timestamp
-    if (timestamp < Team::getMostRecentTimestamp())
+    else if (time_stamp < Team::getMostRecentTimestamp())
     {
         throw std::invalid_argument(
             "Error: Attempt tp update Team state with old Timestamp");
     }
+    else if (time_stamp == Team::getMostRecentTimestamp())
+    {
+        // Don't update if the timestamp is the same as the most recent already assigned
+        // to Team
+        return;
+    }
     else
     {
-        last_update_timestamp = timestamp;
+        last_update_timestamps.push_front(time_stamp);
     }
 }
 
-std::optional<Timestamp> Team::timestamp() const
+std::optional<Timestamp> Team::lastUpdateTimestamp() const
 {
     std::optional<Timestamp> most_recent_timestamp = std::nullopt;
     for (const Robot& robot : getAllRobots())
     {
-        if (!most_recent_timestamp || robot.timestamp() > most_recent_timestamp)
+        if (!most_recent_timestamp || robot.lastUpdateTimestamp() > most_recent_timestamp)
         {
-            most_recent_timestamp = robot.timestamp();
+            most_recent_timestamp = robot.lastUpdateTimestamp();
         }
     }
     return most_recent_timestamp;

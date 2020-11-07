@@ -10,19 +10,18 @@ World::World(const Field &field, const Ball &ball, const Team &friendly_team,
       friendly_team_(friendly_team),
       enemy_team_(enemy_team),
       current_game_state_(),
-      current_referee_stage_(),
-      last_update_timestamp_(),
       // Store a small buffer of previous referee commands so we can filter out noise
-      referee_command_history_(REFEREE_COMMAND_BUFFER_SIZE),
-      referee_stage_history_(REFEREE_COMMAND_BUFFER_SIZE),
-      team_with_possesion_(TeamSide::ENEMY)
+      referee_command_history(REFEREE_COMMAND_BUFFER_SIZE),
+      referee_stage_history(REFEREE_COMMAND_BUFFER_SIZE)
 {
+    // Grab the most recent timestamp from all of the members used to update the world
+    last_update_timestamps.set_capacity(buffer_size);
     updateTimestamp(getMostRecentTimestampFromMembers());
 }
 
-void World::updateBall(const Ball &new_ball)
+void World::updateBallStateWithTimestamp(const TimestampedBallState &new_ball_state)
 {
-    ball_ = new_ball;
+    ball_.updateState(new_ball_state);
     updateTimestamp(getMostRecentTimestampFromMembers());
     current_game_state_.updateBall(ball_);
 }
@@ -39,16 +38,22 @@ void World::updateEnemyTeamState(const Team &new_enemy_team_data)
     updateTimestamp(getMostRecentTimestampFromMembers());
 }
 
-void World::updateTimestamp(Timestamp timestamp)
+void World::updateTimestamp(Timestamp time_stamp)
 {
-    if (timestamp < getMostRecentTimestamp())
+    // Check if the timestamp buffer is empty
+    if (last_update_timestamps.empty())
+    {
+        last_update_timestamps.push_front(time_stamp);
+    }
+    // Check that the new timestamp is not older than the most recent timestamp
+    else if (time_stamp < getMostRecentTimestamp())
     {
         throw std::invalid_argument(
             "Error: Attempt tp update World state with old Timestamp");
     }
     else
     {
-        last_update_timestamp_ = timestamp;
+        last_update_timestamps.push_front(time_stamp);
     }
 }
 
@@ -74,13 +79,12 @@ const Team &World::enemyTeam() const
 
 void World::updateRefereeCommand(const RefereeCommand &command)
 {
-    referee_command_history_.push_back(command);
+    referee_command_history.push_back(command);
     // Take the consensus of the previous referee messages
-    if (!referee_command_history_.empty() &&
-        std::all_of(referee_command_history_.begin(), referee_command_history_.end(),
-                    [&](auto gamestate) {
-                        return gamestate == referee_command_history_.front();
-                    }))
+    if (!referee_command_history.empty() &&
+        std::all_of(
+            referee_command_history.begin(), referee_command_history.end(),
+            [&](auto gamestate) { return gamestate == referee_command_history.front(); }))
     {
         current_game_state_.updateRefereeCommand(command);
     }
@@ -95,11 +99,11 @@ void World::updateRefereeCommand(const RefereeCommand &command,
 
 void World::updateRefereeStage(const RefereeStage &stage)
 {
-    referee_stage_history_.push_back(stage);
+    referee_stage_history.push_back(stage);
     // Take the consensus of the previous referee messages
-    if (!referee_stage_history_.empty() &&
-        std::all_of(referee_stage_history_.begin(), referee_stage_history_.end(),
-                    [&](auto stage) { return stage == referee_stage_history_.front(); }))
+    if (!referee_stage_history.empty() &&
+        std::all_of(referee_stage_history.begin(), referee_stage_history.end(),
+                    [&](auto stage) { return stage == referee_stage_history.front(); }))
     {
         current_referee_stage_ = stage;
     }
@@ -114,7 +118,7 @@ Timestamp World::getMostRecentTimestampFromMembers()
     // Add all member timestamps to a list
     std::initializer_list<Timestamp> member_timestamps = {
         friendly_team_.getMostRecentTimestamp(), enemy_team_.getMostRecentTimestamp(),
-        ball_.timestamp()};
+        ball_.getPreviousStates().front().timestamp()};
     // Return the max
 
     return std::max(member_timestamps);
@@ -122,7 +126,12 @@ Timestamp World::getMostRecentTimestampFromMembers()
 
 const Timestamp World::getMostRecentTimestamp() const
 {
-    return last_update_timestamp_;
+    return last_update_timestamps.front();
+}
+
+boost::circular_buffer<Timestamp> World::getTimestampHistory()
+{
+    return last_update_timestamps;
 }
 
 const GameState &World::gameState() const
@@ -157,14 +166,4 @@ void World::updateGameState(const GameState &game_state)
 const RefereeStage &World::getRefereeStage() const
 {
     return current_referee_stage_;
-}
-
-void World::setTeamWithPossession(TeamSide team_with_possesion)
-{
-    team_with_possesion_ = team_with_possesion;
-}
-
-TeamSide World::getTeamWithPossession() const
-{
-    return team_with_possesion_;
 }

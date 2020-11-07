@@ -23,7 +23,6 @@ cc_library(
         "//software/math:math_functions",
         "//software/world:ball",
         "//software/world:field",
-        "@boost//:circular_buffer",
         "@eigen",
     ],
 )

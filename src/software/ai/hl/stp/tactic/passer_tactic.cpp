@@ -1,7 +1,6 @@
 #include "software/ai/hl/stp/tactic/passer_tactic.h"
 
 #include "shared/constants.h"
-#include "software/ai/evaluation/ball.h"
 #include "software/ai/hl/stp/action/intercept_ball_action.h"
 #include "software/ai/hl/stp/action/kick_action.h"
 #include "software/ai/hl/stp/action/move_action.h"
@@ -44,7 +43,7 @@ void PasserTactic::calculateNextAction(ActionCoroutine::push_type& yield)
     // we are likely in a set play and so we don't need to initially collect the ball
     if (ball.velocity().length() > INTERCEPT_BALL_SPEED_THRESHOLD)
     {
-        auto intercept_action = std::make_shared<InterceptBallAction>(field, ball);
+        auto intercept_action = std::make_shared<InterceptBallAction>(field, ball, false);
         do
         {
             intercept_action->updateControlParams(*robot);
@@ -56,7 +55,7 @@ void PasserTactic::calculateNextAction(ActionCoroutine::push_type& yield)
     // until it's time to perform the pass
     auto move_action = std::make_shared<MoveAction>(
         true, MoveAction::ROBOT_CLOSE_TO_DEST_THRESHOLD, Angle());
-    while (ball.timestamp() < pass.startTime())
+    while (ball.lastUpdateTimestamp() < pass.startTime())
     {
         // We want to wait just behind where the pass is supposed to start, so that the
         // ball is *almost* touching the kicker
@@ -71,7 +70,9 @@ void PasserTactic::calculateNextAction(ActionCoroutine::push_type& yield)
         yield(move_action);
     }
 
-    Angle kick_direction;
+    // The angle between the ball velocity vector and a vector from the passer
+    // point to the receiver point
+    Angle ball_velocity_to_pass_orientation;
 
     auto kick_action = std::make_shared<KickAction>();
     do
@@ -84,9 +85,12 @@ void PasserTactic::calculateNextAction(ActionCoroutine::push_type& yield)
 
         // We want to keep trying to kick until the ball is moving along the pass
         // vector with sufficient velocity
-        kick_direction = (pass.receiverPoint() - ball.position()).orientation();
-
-    } while (!hasBallBeenKicked(ball, kick_direction));
+        Angle passer_to_receiver_angle =
+            (pass.receiverPoint() - pass.passerPoint()).orientation();
+        ball_velocity_to_pass_orientation =
+            ball.velocity().orientation().minDiff(passer_to_receiver_angle);
+    } while (ball_velocity_to_pass_orientation.abs() > Angle::fromDegrees(20) ||
+             ball.velocity().length() < 0.5);
 }
 
 void PasserTactic::accept(MutableTacticVisitor& visitor)
